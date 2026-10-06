@@ -58,7 +58,7 @@ const dialog = ref<null | 'install' | 'remote'>(null)
     <CommandForm :path="['java', 'install']" submit-label="Install" />
   </ModalDialog>
   <ModalDialog v-if="dialog === 'remote'" title="Java distributions" @close="dialog = null">
-    <p class="muted">Lists distributions, or with a version the installable runtimes. Use --providers to list providers.</p>
+    <p class="muted">Lists the available distributions, or the installable runtimes when a version is given.</p>
     <CommandForm :path="['java', 'list']" :initial="{ '--remote': true }" submit-label="List" :show-description="false" />
   </ModalDialog>
 </template>

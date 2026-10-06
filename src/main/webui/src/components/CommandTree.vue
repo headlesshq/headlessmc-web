@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { commandLabel } from '../lib/labels'
 import type { CommandModel } from '../lib/types'
 
 const props = defineProps<{ command: CommandModel; selected: string[]; showHidden: boolean; depth?: number }>()
@@ -12,7 +13,7 @@ const visible = (command: CommandModel) => props.showHidden || !command.hidden
   <ul class="tree">
     <li v-for="sub in command.subcommands.filter(visible)" :key="sub.name">
       <a href="#" :class="{ active: isSelected(sub), hidden: sub.hidden }" :title="sub.description" @click.prevent="emit('select', sub)">
-        {{ sub.name }}
+        {{ commandLabel(sub) }}
       </a>
       <CommandTree
         v-if="sub.subcommands.length"
@@ -41,7 +42,6 @@ a {
   display: block;
   color: var(--fg);
   text-decoration: none;
-  font-family: var(--mono);
   font-size: 0.9rem;
   padding: 0.15rem 0.35rem;
   border-radius: 4px;

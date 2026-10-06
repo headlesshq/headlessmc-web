@@ -144,7 +144,3 @@ export function initialValues(chain: CommandModel[], initial: Record<string, Fie
   }
   return values
 }
-
-export function fieldLabel(field: OptionModel | PositionalModel): string {
-  return 'names' in field ? field.names[0] : field.paramLabel.replace(/^<|>$/g, '')
-}

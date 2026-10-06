@@ -185,3 +185,42 @@ export interface ConfigProperty {
   value: string | null
   description: string | null
 }
+
+export interface ContainedMod {
+  id: string
+  name: string
+}
+
+export interface ModFile {
+  /** relative to the game directory, identifies the file */
+  path: string
+  fileName: string
+  type: string
+  world: string | null
+  directory: boolean
+  size: number
+  modified: number
+  enabled: boolean
+  displayName: string
+  version: string | null
+  description: string | null
+  authors: string[]
+  mods: ContainedMod[]
+  hasLogo: boolean
+}
+
+export interface ModsListing {
+  profile: string
+  side: 'client' | 'server'
+  platform: string
+  type: string
+  types: string[]
+  worlds: string[]
+  files: ModFile[]
+}
+
+export interface RemoteMod {
+  id: string
+  name: string
+  description: string
+}

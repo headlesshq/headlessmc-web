@@ -33,6 +33,10 @@ dependencies {
     implementation "io.github.headlesshq:headlessmc-launcher-process:${hmcVersion}"
     implementation "io.github.headlesshq:headlessmc-launcher-server:${hmcVersion}"
     implementation "io.github.headlesshq:headlessmc-launcher-profile:${hmcVersion}"
+    implementation "io.github.headlesshq:headlessmc-commands-mod:${hmcVersion}"
+    implementation "io.github.headlesshq:headlessmc-mods:${hmcVersion}"
+    implementation "io.github.headlesshq:headlessmc-mods-distribution:${hmcVersion}"
+    implementation "io.github.headlesshq:headlessmc-platform:${hmcVersion}"
     implementation "io.github.headlesshq:headlessmc-test:${hmcVersion}"
     implementation "io.github.headlesshq:headlessmc-config:${hmcVersion}"
     implementation "io.github.headlesshq:headlessmc-java-launcher:${hmcVersion}"
@@ -68,4 +72,14 @@ test {
     systemProperty 'hmc.files.location', layout.buildDirectory.dir('test-hmc').get().asFile.absolutePath
     // the frontend is built and tested separately (npm), skip it in the JVM tests
     systemProperty 'quarkus.quinoa.enabled', 'false'
+}
+
+// Quinoa builds the frontend during the Quarkus build, but Gradle does not know about the frontend sources:
+// without these inputs, frontend-only changes leave quarkusBuild UP-TO-DATE and the jar keeps the old frontend.
+['quarkusAppPartsBuild', 'quarkusBuild'].each { name ->
+    tasks.named(name) {
+        inputs.files(fileTree('src/main/webui') {
+            exclude 'node_modules/**', 'dist/**', '**/__tests__/**', 'src/integration/**'
+        }).withPropertyName('webui').withPathSensitivity(PathSensitivity.RELATIVE)
+    }
 }

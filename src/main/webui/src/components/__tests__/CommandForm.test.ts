@@ -20,9 +20,14 @@ describe('CommandForm', () => {
     await flush()
 
     const text = wrapper.text()
-    expect(text).toContain('--provider')
-    expect(text).toContain('--method')
-    expect(text).toContain('options of account')
+    expect(text).toContain('Provider')
+    expect(text).toContain('Login method')
+    expect(text).toContain('Account settings')
+    // no command line artifacts in the form
+    expect(text).not.toContain('--')
+    expect(text).not.toContain('<')
+    expect(wrapper.find('.preview').exists()).toBe(false)
+    await wrapper.find('button.link').trigger('click')
     expect(wrapper.find('.preview').text()).toBe('> account --provider offline login')
 
     await wrapper.find('form').trigger('submit')
@@ -36,10 +41,11 @@ describe('CommandForm', () => {
     const wrapper = mount(CommandForm, { props: { path: ['profile', 'edit'] } })
     await flush()
     expect(wrapper.find('button[type=submit]').attributes('disabled')).toBeDefined()
-    expect(wrapper.text()).toContain('Required: <name>')
+    expect(wrapper.text()).toContain('Required: Name')
 
     await wrapper.find('input').setValue('my profile')
     expect(wrapper.find('button[type=submit]').attributes('disabled')).toBeUndefined()
+    await wrapper.find('button.link').trigger('click')
     expect(wrapper.find('.preview').text()).toBe('> profile edit "my profile"')
   })
 

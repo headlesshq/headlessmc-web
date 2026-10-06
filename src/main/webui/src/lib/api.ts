@@ -7,9 +7,12 @@ import type {
   InstalledVersion,
   JavaInstallation,
   Job,
+  ModFile,
+  ModsListing,
   ProcessInfo,
   ProcessLine,
   Profile,
+  RemoteMod,
 } from './types'
 
 export class ApiError extends Error {
@@ -22,10 +25,11 @@ export class ApiError extends Error {
 }
 
 async function request<T>(method: string, url: string, body?: unknown): Promise<T> {
+  const form = body instanceof FormData
   const response = await fetch(url, {
     method,
-    headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
-    body: body === undefined ? undefined : JSON.stringify(body),
+    headers: body === undefined || form ? undefined : { 'Content-Type': 'application/json' },
+    body: body === undefined ? undefined : form ? body : JSON.stringify(body),
   })
   if (!response.ok) {
     const text = await response.text().catch(() => '')
@@ -58,6 +62,30 @@ export const api = {
   versions: () => request<InstalledVersion[]>('GET', '/api/versions'),
   java: () => request<JavaInstallation[]>('GET', '/api/java'),
   config: (all = false) => request<ConfigProperty[]>('GET', `/api/config?all=${all}`),
+
+  mods: (profile: string, type?: string) =>
+    request<ModsListing>('GET', `/api/mods/${encodeURIComponent(profile)}${type ? `?type=${encodeURIComponent(type)}` : ''}`),
+  modLogoUrl: (profile: string, file: ModFile) =>
+    `/api/mods/${encodeURIComponent(profile)}/logo?path=${encodeURIComponent(file.path)}&v=${file.modified}`,
+  addMods: (profile: string, type: string, files: File[], world?: string | null, overwrite = false) => {
+    const form = new FormData()
+    files.forEach((file) => form.append('files', file, file.name))
+    const query = new URLSearchParams({ type, overwrite: String(overwrite) })
+    if (world) query.set('world', world)
+    return request<ModFile[]>('POST', `/api/mods/${encodeURIComponent(profile)}/files?${query}`, form)
+  },
+  removeMod: (profile: string, path: string) =>
+    request<void>('DELETE', `/api/mods/${encodeURIComponent(profile)}/files?path=${encodeURIComponent(path)}`),
+  setModEnabled: (profile: string, path: string, enabled: boolean) =>
+    request<ModFile>(
+      'POST',
+      `/api/mods/${encodeURIComponent(profile)}/files/enabled?path=${encodeURIComponent(path)}&enabled=${enabled}`,
+    ),
+  searchMods: (profile: string, type: string, query: string) =>
+    request<RemoteMod[]>(
+      'GET',
+      `/api/mods/${encodeURIComponent(profile)}/search?${new URLSearchParams({ type, query })}`,
+    ),
 
   processes: () => request<ProcessInfo[]>('GET', '/api/processes'),
   processOutput: (id: string) => request<ProcessLine[]>('GET', `/api/processes/${encodeURIComponent(id)}/output`),

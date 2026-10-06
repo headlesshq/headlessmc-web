@@ -2,7 +2,6 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import {
   buildLine,
-  fieldLabel,
   findChain,
   initialValues,
   loadCommands,
@@ -14,6 +13,7 @@ import {
   type FieldValue,
   type FormValues,
 } from '../lib/commands'
+import { commandLabel, optionLabel, placeholder, positionalLabel } from '../lib/labels'
 import { run } from '../lib/store'
 import type { CommandModel } from '../lib/types'
 import CompletionInput from './CompletionInput.vue'
@@ -38,10 +38,18 @@ const values = ref<FormValues>({})
 const error = ref('')
 const jobId = ref<string | null>(null)
 const busy = ref(false)
+const showCommand = ref(false)
 
 const command = computed(() => chain.value?.[chain.value.length - 1] ?? null)
 const line = computed(() => (chain.value ? buildLine(chain.value, values.value) : ''))
 const missing = computed(() => (chain.value ? missingRequired(chain.value, values.value) : []))
+const missingLabels = computed(() => {
+  const all = [...(chain.value ?? []).flatMap((cmd) => cmd.options), ...(command.value?.positionals ?? [])]
+  return missing.value.map((name) => {
+    const field = all.find((f) => ('names' in f ? f.names[0] === name : f.paramLabel === name))
+    return field ? ('names' in field ? optionLabel(field) : positionalLabel(field)) : name
+  })
+})
 
 const levels = computed(() =>
   (chain.value ?? [])
@@ -116,7 +124,7 @@ function help() {
 
       <div v-for="positional in visiblePositionals(command)" :key="positionalKey(positional)" class="field">
         <label>
-          {{ fieldLabel(positional) }}<span v-if="positional.required && positional.arityMin > 0" class="required">*</span>
+          {{ positionalLabel(positional) }}<span v-if="positional.required && positional.arityMin > 0" class="required">*</span>
         </label>
         <div class="input">
           <CompletionInput
@@ -125,7 +133,7 @@ function help() {
             :multi-word="positional.type === 'list'"
             :completions="positional.completions"
             :input-type="positional.type === 'integer' || positional.type === 'number' ? 'number' : 'text'"
-            :placeholder="positional.type === 'list' ? 'values separated by spaces' : ''"
+            :placeholder="placeholder(positional)"
             @update:model-value="setValue(positionalKey(positional), $event)"
           />
           <small v-if="positional.description" class="muted">{{ positional.description }}</small>
@@ -133,10 +141,10 @@ function help() {
       </div>
 
       <template v-for="level in levels" :key="level.depth">
-        <div v-if="level.depth < chain.length - 1" class="level muted">options of <code>{{ level.command.path.join(' ') }}</code></div>
+        <div v-if="level.depth < chain.length - 1" class="level muted">{{ commandLabel(level.command) }} settings</div>
         <div v-for="option in level.options" :key="optionKey(level.depth, option)" class="field">
-          <label :title="option.names.join(', ')">
-            {{ option.names[0] }}<span v-if="option.required" class="required">*</span>
+          <label>
+            {{ optionLabel(option) }}<span v-if="option.required" class="required">*</span>
           </label>
           <div class="input">
             <label v-if="option.type === 'boolean' || option.arityMax === 0" class="checkbox">
@@ -153,7 +161,7 @@ function help() {
                 :context="contextFor(level.depth, option)"
                 :completions="option.completions"
                 :input-type="option.type === 'integer' || option.type === 'number' ? 'number' : 'text'"
-                :placeholder="option.defaultValue ? `default: ${option.defaultValue}` : option.paramLabel"
+                :placeholder="placeholder(option)"
                 @update:model-value="setValue(optionKey(level.depth, option), $event)"
               />
               <small v-if="option.description" class="muted">{{ option.description }}</small>
@@ -166,11 +174,16 @@ function help() {
         <button type="submit" class="primary" :disabled="busy || missing.length > 0 || !command.runnable">
           {{ submitLabel }}
         </button>
-        <button type="button" @click="help">Help</button>
-        <code class="preview" title="The command that will be executed">&gt; {{ line }}</code>
+        <button type="button" class="link" @click="showCommand = !showCommand">
+          {{ showCommand ? 'Hide command' : 'Show command' }}
+        </button>
+      </div>
+      <div v-if="showCommand" class="row">
+        <code class="preview" title="The HeadlessMc command that will be executed">&gt; {{ line }}</code>
+        <button type="button" class="small" @click="help">Command help</button>
       </div>
       <div v-if="!command.runnable" class="muted">This command needs a sub command.</div>
-      <div v-else-if="missing.length" class="muted">Required: {{ missing.join(', ') }}</div>
+      <div v-else-if="missing.length" class="muted">Required: {{ missingLabels.join(', ') }}</div>
     </form>
 
     <JobOutput v-if="jobId" :job-id="jobId" class="result" />
@@ -239,6 +252,14 @@ h3 {
 
 .submit {
   margin-top: 0.25rem;
+}
+
+button.link {
+  background: none;
+  border: none;
+  color: var(--fg-muted);
+  text-decoration: underline;
+  padding: 0.35rem 0.25rem;
 }
 
 .preview {

@@ -16,7 +16,8 @@ export function mockFetch(handlers: Record<string, Handler>): Call[] {
     vi.fn(async (url: string, init?: RequestInit) => {
       const method = init?.method ?? 'GET'
       const path = url.split('?')[0]
-      const call = { method, url, body: init?.body ? JSON.parse(String(init.body)) : undefined }
+      const raw = init?.body
+      const call = { method, url, body: raw && !(raw instanceof FormData) ? JSON.parse(String(raw)) : raw }
       calls.push(call)
       const handler = handlers[`${method} ${path}`]
       if (!handler) {
