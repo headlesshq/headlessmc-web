@@ -1,0 +1,3 @@
+[submodule "headlessmc"]
+	path = headlessmc
+	url = https://github.com/headlesshq/headlessmc.git
