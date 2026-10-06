@@ -1,0 +1,12 @@
+pluginManagement {
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+rootProject.name = 'headlessmc-web'
+
+// The HeadlessMc backend is consumed from the git submodule as a composite build:
+// io.github.headlesshq:<module> dependencies are substituted with the included build's projects.
+includeBuild 'headlessmc'

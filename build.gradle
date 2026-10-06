@@ -1,0 +1,71 @@
+plugins {
+    id 'java'
+    id 'io.quarkus' version "${quarkusVersion}"
+}
+
+group = 'io.github.headlesshq'
+version = '1.0.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+configurations.configureEach {
+    // The jline progressbar draws to the server's terminal, the web layer provides its own ProgressbarService.
+    exclude group: 'io.github.headlesshq', module: 'headlessmc-progressbar-jline'
+}
+
+dependencies {
+    implementation enforcedPlatform("io.quarkus.platform:quarkus-bom:${quarkusVersion}")
+    implementation 'io.quarkus:quarkus-arc'
+    implementation 'io.quarkus:quarkus-rest'
+    implementation 'io.quarkus:quarkus-rest-jackson'
+    implementation 'io.quarkus:quarkus-websockets-next'
+    // makes picocli @Command classes CDI beans, HeadlessMc's commands rely on that
+    implementation 'io.quarkus:quarkus-picocli'
+    implementation "io.quarkiverse.quinoa:quarkus-quinoa:${quinoaVersion}"
+
+    implementation "io.github.headlesshq:headlessmc:${hmcVersion}"
+    implementation "io.github.headlesshq:headlessmc-bom:${hmcVersion}"
+    implementation "io.github.headlesshq:headlessmc-commands:${hmcVersion}"
+    implementation "io.github.headlesshq:headlessmc-console-completions:${hmcVersion}"
+    implementation "io.github.headlesshq:headlessmc-launcher:${hmcVersion}"
+    implementation "io.github.headlesshq:headlessmc-launcher-process:${hmcVersion}"
+    implementation "io.github.headlesshq:headlessmc-launcher-server:${hmcVersion}"
+    implementation "io.github.headlesshq:headlessmc-launcher-profile:${hmcVersion}"
+    implementation "io.github.headlesshq:headlessmc-test:${hmcVersion}"
+    implementation "io.github.headlesshq:headlessmc-config:${hmcVersion}"
+    implementation "io.github.headlesshq:headlessmc-java-launcher:${hmcVersion}"
+    implementation 'info.picocli:picocli:4.7.7'
+    implementation 'org.jline:jline:4.4.6' // keep aligned with headlessmc, used to parse lines like HeadlessMc does
+    implementation 'org.jspecify:jspecify:1.0.1'
+
+    // Depending on projects of the included headlessmc build (which apply the io.quarkus plugin themselves)
+    // makes the Quarkus Gradle plugin drop the 'conditional-dev-dependencies' of the extensions in dev mode,
+    // quarkusDev then fails with e.g. ClassNotFoundException: io.quarkus.devui.runtime.mcp.DevMcpConfig.
+    // Add them explicitly (from META-INF/quarkus-extension.properties of the extensions used here).
+    ['quarkus-devui', 'quarkus-arc-dev', 'quarkus-cache-dev', 'quarkus-rest-dev', 'quarkus-websockets-next-dev'].each {
+        quarkusDev "io.quarkus:${it}:${quarkusVersion}"
+    }
+
+    testImplementation 'io.quarkus:quarkus-junit'
+    testImplementation 'io.rest-assured:rest-assured'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.compilerArgs << '-parameters'
+}
+
+test {
+    useJUnitPlatform()
+    systemProperty 'java.util.logging.manager', 'org.jboss.logmanager.LogManager'
+    systemProperty 'hmc.files.location', layout.buildDirectory.dir('test-hmc').get().asFile.absolutePath
+    // the frontend is built and tested separately (npm), skip it in the JVM tests
+    systemProperty 'quarkus.quinoa.enabled', 'false'
+}

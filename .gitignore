@@ -1,0 +1,9 @@
+.gradle/
+build/
+.idea/
+*.iml
+out/
+HeadlessMC/
+node_modules/
+src/main/webui/dist/
+src/main/webui/node_modules/
