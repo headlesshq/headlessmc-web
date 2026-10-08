@@ -223,4 +223,6 @@ export interface RemoteMod {
   id: string
   name: string
   description: string
+  /** icon on the distribution platform (Modrinth), if the project has one */
+  iconUrl: string | null
 }

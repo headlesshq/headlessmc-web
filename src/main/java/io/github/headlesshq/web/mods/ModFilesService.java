@@ -6,11 +6,13 @@ import io.github.headlesshq.headlessmc.launcher.profile.Profile;
 import io.github.headlesshq.headlessmc.launcher.profile.ProfileService;
 import io.github.headlesshq.headlessmc.launcher.server.ServerService;
 import io.github.headlesshq.headlessmc.mods.ModType;
+import io.github.headlesshq.headlessmc.mods.distribution.ModDistributionPlatform;
 import io.github.headlesshq.headlessmc.mods.distribution.ModDistributionPlatformService;
 import io.github.headlesshq.headlessmc.mods.distribution.RemoteMod;
 import io.github.headlesshq.headlessmc.platform.Platform;
 import io.github.headlesshq.headlessmc.platform.PlatformService;
 import io.github.headlesshq.headlessmc.platform.mods.ModSupport;
+import io.github.headlesshq.web.mods.icon.ModrinthIconService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
@@ -44,10 +46,12 @@ public class ModFilesService {
 
     private static final Logger LOG = Logger.getLogger(ModFilesService.class);
     private static final Set<String> EXTENSIONS = Set.of(".jar", ".zip");
+    private static final String MODRINTH = "modrinth";
 
     private final Map<String, CachedInfo> infoCache = new ConcurrentHashMap<>();
     private final ModDistributionPlatformService distributionService;
     private final ModListingService modListingService;
+    private final ModrinthIconService modrinthIcons;
     private final PlatformService platformService;
     private final ProfileService profileService;
     private final ServerService serverService;
@@ -56,12 +60,14 @@ public class ModFilesService {
     public ModFilesService(
         ModDistributionPlatformService distributionService,
         ModListingService modListingService,
+        ModrinthIconService modrinthIcons,
         PlatformService platformService,
         ProfileService profileService,
         ServerService serverService
     ) {
         this.distributionService = distributionService;
         this.modListingService = modListingService;
+        this.modrinthIcons = modrinthIcons;
         this.platformService = platformService;
         this.profileService = profileService;
         this.serverService = serverService;
@@ -150,7 +156,7 @@ public class ModFilesService {
 
     public Optional<byte[]> logo(Profile profile, String relativePath) throws IOException {
         ModLocation location = resolve(profile, relativePath);
-        ModArchiveInfo info = info(location.file());
+        ModArchiveInfo info = info(location.file(), platform(profile));
         if (info.logo() == null) {
             return Optional.empty();
         }
@@ -221,8 +227,13 @@ public class ModFilesService {
         return describe(profile, location.type(), target, location.world(), List.of());
     }
 
-    public List<RemoteMod> search(Profile profile, ModType type, String query, @Nullable String platform) {
-        return distributionService.getByArg(platform).search(query, profile.version(), Set.of(type));
+    public List<RemoteModDto> search(Profile profile, ModType type, String query, @Nullable String platform) {
+        ModDistributionPlatform distribution = distributionService.getByArg(platform);
+        List<RemoteMod> mods = distribution.search(query, profile.version(), Set.of(type));
+        Map<String, String> icons = MODRINTH.equalsIgnoreCase(distribution.getName())
+            ? modrinthIcons.getIcons(mods.stream().map(RemoteMod::id).toList())
+            : Map.of();
+        return mods.stream().map(mod -> RemoteModDto.of(mod, icons.get(mod.id()))).toList();
     }
 
     private ModFileDto describe(Profile profile, ModType type, Path file, @Nullable String world, List<ModFile> mods) {
@@ -237,7 +248,7 @@ public class ModFilesService {
             LOG.debugf(e, "Failed to read attributes of %s", file);
         }
 
-        ModArchiveInfo info = info(file);
+        ModArchiveInfo info = info(file, platform(profile));
         ModFile first = mods.isEmpty() ? null : mods.getFirst();
         String displayName = first != null && !first.name().equals(fileName) ? first.name() : prettyFileName(fileName);
         // HeadlessMc's toml readers may return null authors/description for mods that do not declare them
@@ -270,7 +281,7 @@ public class ModFilesService {
         );
     }
 
-    private ModArchiveInfo info(Path file) {
+    private ModArchiveInfo info(Path file, @Nullable String platform) {
         long modified;
         long size;
         try {
@@ -280,13 +291,13 @@ public class ModFilesService {
             return ModArchiveInfo.NONE;
         }
 
-        String key = file.toAbsolutePath().toString();
+        String key = platform + ":" + file.toAbsolutePath();
         CachedInfo cached = infoCache.get(key);
         if (cached != null && cached.modified() == modified && cached.size() == size) {
             return cached.info();
         }
 
-        ModArchiveInfo info = ModArchiveInfo.read(file);
+        ModArchiveInfo info = ModArchiveInfo.read(file, platform);
         infoCache.put(key, new CachedInfo(modified, size, info));
         return info;
     }
@@ -378,6 +389,10 @@ public class ModFilesService {
         String name = fileName.endsWith(DISABLED) ? fileName.substring(0, fileName.length() - DISABLED.length()) : fileName;
         int dot = name.lastIndexOf('.');
         return dot > 0 ? name.substring(0, dot) : name;
+    }
+
+    private static @Nullable String platform(Profile profile) {
+        return profile.version() == null ? null : profile.version().platform();
     }
 
     private static Path gameDir(Profile profile) {

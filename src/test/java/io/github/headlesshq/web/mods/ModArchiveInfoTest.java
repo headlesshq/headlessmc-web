@@ -18,7 +18,7 @@ class ModArchiveInfoTest {
     @Test
     void readsNeoForgeLogoAndManifestVersion() throws IOException {
         Path jar = TestJars.neoForgeMod(dir.resolve("example.jar"));
-        ModArchiveInfo info = ModArchiveInfo.read(jar);
+        ModArchiveInfo info = ModArchiveInfo.read(jar, null);
         assertEquals("examplemod_logo.png", info.logo());
         assertEquals("2.4.0", info.version());
         assertArrayEquals(TestJars.PNG, ModArchiveInfo.readLogo(jar, info.logo()));
@@ -34,7 +34,7 @@ class ModArchiveInfoTest {
             .bytes("assets/sodium/small.png", TestJars.PNG)
             .bytes("assets/sodium/large.png", TestJars.PNG)
             .write(dir.resolve("sodium.jar"));
-        assertEquals(new ModArchiveInfo("assets/sodium/large.png", "0.9.2"), ModArchiveInfo.read(jar));
+        assertEquals(new ModArchiveInfo("assets/sodium/large.png", "0.9.2"), ModArchiveInfo.read(jar, null));
     }
 
     @Test
@@ -43,11 +43,11 @@ class ModArchiveInfoTest {
             .text("pack.mcmeta", "{\"pack\": {\"pack_format\": 46}}")
             .bytes("pack.png", TestJars.PNG)
             .write(dir.resolve("pack.zip"));
-        assertEquals("pack.png", ModArchiveInfo.read(pack).logo());
+        assertEquals("pack.png", ModArchiveInfo.read(pack, null).logo());
 
         Path folder = Files.createDirectories(dir.resolve("folder-pack"));
         Files.write(folder.resolve("pack.png"), TestJars.PNG);
-        assertEquals("pack.png", ModArchiveInfo.read(folder).logo());
+        assertEquals("pack.png", ModArchiveInfo.read(folder, null).logo());
     }
 
     @Test
@@ -56,13 +56,13 @@ class ModArchiveInfoTest {
             .text("META-INF/mods.toml", "[[mods]]\nmodId=\"x\"\nversion=\"1.0\"\nlogoFile=\"missing.png\"\n")
             .bytes("assets/x/icon.png", TestJars.PNG)
             .write(dir.resolve("x.jar"));
-        assertEquals(new ModArchiveInfo("assets/x/icon.png", "1.0"), ModArchiveInfo.read(jar));
+        assertEquals(new ModArchiveInfo("assets/x/icon.png", "1.0"), ModArchiveInfo.read(jar, null));
     }
 
     @Test
     void toleratesBrokenFiles() throws IOException {
         Path file = Files.writeString(dir.resolve("broken.jar"), "not a zip");
-        ModArchiveInfo info = ModArchiveInfo.read(file);
+        ModArchiveInfo info = ModArchiveInfo.read(file, null);
         assertNull(info.logo());
         assertNull(info.version());
     }

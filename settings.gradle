@@ -10,3 +10,12 @@ rootProject.name = 'headlessmc-web'
 // The HeadlessMc backend is consumed from the git submodule as a composite build:
 // io.github.headlesshq:<module> dependencies are substituted with the included build's projects.
 includeBuild 'headlessmc'
+
+// Use the same library versions as HeadlessMc, e.g. hmcLibs.jackson.toml
+dependencyResolutionManagement {
+    versionCatalogs {
+        hmcLibs {
+            from(files('headlessmc/gradle/libs.versions.toml'))
+        }
+    }
+}

@@ -20,6 +20,8 @@ dependencies {
     implementation 'io.quarkus:quarkus-arc'
     implementation 'io.quarkus:quarkus-rest'
     implementation 'io.quarkus:quarkus-rest-jackson'
+    implementation hmcLibs.jackson.asProvider()
+    implementation hmcLibs.jackson.toml
     implementation 'io.quarkus:quarkus-websockets-next'
     // makes picocli @Command classes CDI beans, HeadlessMc's commands rely on that
     implementation 'io.quarkus:quarkus-picocli'
@@ -36,6 +38,7 @@ dependencies {
     implementation "io.github.headlesshq:headlessmc-commands-mod:${hmcVersion}"
     implementation "io.github.headlesshq:headlessmc-mods:${hmcVersion}"
     implementation "io.github.headlesshq:headlessmc-mods-distribution:${hmcVersion}"
+    implementation "io.github.headlesshq:headlessmc-net:${hmcVersion}"
     implementation "io.github.headlesshq:headlessmc-platform:${hmcVersion}"
     implementation "io.github.headlesshq:headlessmc-test:${hmcVersion}"
     implementation "io.github.headlesshq:headlessmc-config:${hmcVersion}"

@@ -2,9 +2,9 @@ package io.github.headlesshq.web.api;
 
 import io.github.headlesshq.headlessmc.launcher.profile.Profile;
 import io.github.headlesshq.headlessmc.mods.ModType;
-import io.github.headlesshq.headlessmc.mods.distribution.RemoteMod;
 import io.github.headlesshq.web.mods.ModFileDto;
 import io.github.headlesshq.web.mods.ModFilesService;
+import io.github.headlesshq.web.mods.RemoteModDto;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.Consumes;
@@ -111,7 +111,7 @@ public class ModsResource {
 
     @GET
     @Path("/search")
-    public List<RemoteMod> search(
+    public List<RemoteModDto> search(
         @PathParam("profile") String profileName,
         @QueryParam("query") @Nullable String query,
         @QueryParam("type") @Nullable String typeName,

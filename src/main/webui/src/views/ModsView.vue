@@ -281,7 +281,7 @@ const installStatus = (id: string) => {
         <div v-if="searchError" class="error">{{ searchError }}</div>
         <div v-if="searching" class="muted">Searching…</div>
         <div v-for="mod in results" :key="mod.id" class="result">
-          <ModLogo :src="null" :name="mod.name" :size="36" />
+          <ModLogo :src="mod.iconUrl" :name="mod.name" :size="36" />
           <div class="info">
             <strong>{{ mod.name }}</strong>
             <div class="muted small description">{{ mod.description }}</div>
